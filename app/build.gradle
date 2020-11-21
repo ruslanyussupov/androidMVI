@@ -36,6 +36,7 @@ android {
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation project(':androidmvi-core')
 
     // Kotlin
     implementation deps('org.jetbrains.kotlin:kotlin-stdlib')
@@ -44,12 +45,18 @@ dependencies {
 
     // Android
     coreLibraryDesugaring deps('com.android.tools:desugar_jdk_libs')
-    implementation deps('androidx.lifecycle:lifecycle-common-java8')
     implementation deps('androidx.appcompat:appcompat')
     implementation deps('androidx.constraintlayout:constraintlayout')
     implementation deps('com.google.android.material:material')
     implementation deps('androidx.recyclerview:recyclerview')
     implementation deps('androidx.core:core-ktx')
+    implementation deps('androidx.activity:activity-ktx')
+    implementation deps('androidx.lifecycle:lifecycle-viewmodel-ktx')
+    implementation deps('androidx.lifecycle:lifecycle-livedata-ktx')
+    implementation deps('androidx.lifecycle:lifecycle-runtime-ktx')
+    implementation deps('androidx.lifecycle:lifecycle-viewmodel-savedstate')
+    implementation deps('androidx.lifecycle:lifecycle-common-java8')
+    implementation deps('androidx.lifecycle:lifecycle-extensions')
 
     // Testing
     testImplementation deps('junit:junit')
