@@ -4,19 +4,19 @@ import com.github.ruslanyussupov.androidmvi.core.elements.Actor
 import com.github.ruslanyussupov.androidmvi.core.internal.BypassTriggerTransformer
 import com.github.ruslanyussupov.androidmvi.core.elements.EventPublisher
 import com.github.ruslanyussupov.androidmvi.core.elements.Reducer
-import kotlinx.coroutines.CoroutineScope
+import kotlin.coroutines.CoroutineContext
 
 open class AsyncFeature<Trigger : Any, State : Any, Event : Any>(
     initialState: State,
     reducer: Reducer<Trigger, State>,
     actor: Actor<Trigger, State, Trigger>,
-    scope: CoroutineScope,
+    coroutineContext: CoroutineContext,
     eventPublisher: EventPublisher<Trigger, Trigger, State, Event>? = null
 ) : BaseFeature<Trigger, State, Trigger, Trigger, Event>(
     initialState = initialState,
     reducer = reducer,
     actor = actor,
     triggerTransformer = BypassTriggerTransformer(),
-    scope = scope,
+    coroutineContext = coroutineContext,
     eventPublisher = eventPublisher
 )

@@ -1,9 +1,7 @@
-package com.github.ruslanyussupov.androidmvi.core.internal
+package com.github.ruslanyussupov.androidmvi.demo
 
-import com.github.ruslanyussupov.androidmvi.core.core.Producer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -25,10 +23,4 @@ internal fun <T> MutableSharedFlow<T>.tryEmitOrBlock(value: T) {
             emit(value)
         }
     }
-}
-
-internal fun <T : Any> SharedFlow<T>.toProducer(): Producer<T> = object : Producer<T> {
-
-    override val source: SharedFlow<T>
-        get() = this@toProducer
 }

@@ -1,30 +1,40 @@
 package com.github.ruslanyussupov.androidmvi.core.feature
 
-import com.github.ruslanyussupov.androidmvi.core.elements.ActionResult
-import com.github.ruslanyussupov.androidmvi.core.elements.Actor
+import com.github.ruslanyussupov.androidmvi.core.elements.BaseActor
 import com.github.ruslanyussupov.androidmvi.core.internal.BypassTriggerTransformer
 import com.github.ruslanyussupov.androidmvi.core.elements.EventPublisher
 import com.github.ruslanyussupov.androidmvi.core.elements.Reducer
-import kotlinx.coroutines.CoroutineScope
+import com.github.ruslanyussupov.androidmvi.core.internal.tryEmitOrBlock
+import com.github.ruslanyussupov.androidmvi.core.middleware.NonWrappable
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlin.coroutines.CoroutineContext
 
 open class SimpleFeature<Trigger : Any, State : Any, Event : Any>(
     initialState: State,
     reducer: Reducer<Trigger, State>,
-    scope: CoroutineScope,
+    coroutineContext: CoroutineContext,
     eventPublisher: EventPublisher<Trigger, Trigger, State, Event>? = null
 ) : BaseFeature<Trigger, State, Trigger, Trigger, Event>(
     initialState = initialState,
     reducer = reducer,
-    actor = BypassActor(),
+    actor = BypassActor(coroutineContext),
     triggerTransformer = BypassTriggerTransformer(),
-    scope = scope,
+    coroutineContext = coroutineContext,
     eventPublisher = eventPublisher
 ) {
 
-    private class BypassActor<Trigger : Any, State : Any> : Actor<Trigger, State, Trigger> {
+    private class BypassActor<Trigger : Any, State : Any>(
+        coroutineContext: CoroutineContext
+    ) : BaseActor<Trigger, State, Trigger>(coroutineContext), NonWrappable {
 
-        override suspend fun execute(action: Trigger, state: State): ActionResult<Trigger> {
-            return ActionResult(single = action, flow = null)
+        private val _results = MutableSharedFlow<Pair<Trigger, Trigger>>()
+        override val results: SharedFlow<Pair<Trigger, Trigger>>
+            get() = _results.asSharedFlow()
+
+        override fun execute(action: Trigger, state: State) {
+            _results.tryEmitOrBlock(Pair(action, action))
         }
     }
 }

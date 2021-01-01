@@ -1,7 +1,7 @@
 package com.github.ruslanyussupov.androidmvi.core.core
 
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
 
 interface Producer<out T> {
-    fun flow(): Flow<T>
+    val source: SharedFlow<T>
 }

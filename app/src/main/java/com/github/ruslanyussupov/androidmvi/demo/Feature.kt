@@ -6,14 +6,14 @@ import com.github.ruslanyussupov.androidmvi.core.feature.SimpleFeature
 import com.github.ruslanyussupov.androidmvi.demo.Feature.Event
 import com.github.ruslanyussupov.androidmvi.demo.Feature.Trigger
 import com.github.ruslanyussupov.androidmvi.demo.Feature.State
-import kotlinx.coroutines.CoroutineScope
+import kotlin.coroutines.CoroutineContext
 
 class Feature(
-    scope: CoroutineScope
+    coroutineContext: CoroutineContext
 ) : SimpleFeature<Trigger, State, Event>(
     initialState = State(counter = 0),
     reducer = ReducerImpl(),
-    scope = scope,
+    coroutineContext = coroutineContext,
     eventPublisher = EventPublisherImpl()
 ) {
 

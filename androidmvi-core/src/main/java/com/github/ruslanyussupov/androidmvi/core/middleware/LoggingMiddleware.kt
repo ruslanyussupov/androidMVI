@@ -1,15 +1,29 @@
 package com.github.ruslanyussupov.androidmvi.core.middleware
 
-import android.util.Log
+import com.github.ruslanyussupov.androidmvi.core.binder.Connection
 import com.github.ruslanyussupov.androidmvi.core.core.Consumer
 
-class LoggingMiddleware<in T>(
-    wrapped: Consumer<T>
-) : Middleware<T>(wrapped) {
+class LoggingMiddleware<T : Any>(
+    wrapped: Consumer<T>,
+    private val logger: Logger
+) : Middleware<Any, T>(wrapped) {
 
-    override fun onReceived(value: T) {
-        Log.d("LoggingMiddleware", "$this -> $value")
+    private val logTag = "LoggingMiddleware"
+
+    override fun onReceive(connection: Connection<Any, T>, value: T) {
+        super.onReceive(connection, value)
+        logger.invoke("$connection | onReceive -> $value")
+    }
+
+    override fun onBind(connection: Connection<Any, T>) {
+        super.onBind(connection)
+        logger.invoke("$connection | onBind")
+    }
+
+    override fun onComplete(connection: Connection<Any, T>) {
+        super.onComplete(connection)
+        logger.invoke("$connection | onComplete")
     }
 }
 
-fun <T> Consumer<T>.wrapWithLogging(): Consumer<T> = LoggingMiddleware(this)
+typealias Logger = (String) -> Unit
