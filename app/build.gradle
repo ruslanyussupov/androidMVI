@@ -58,6 +58,18 @@ dependencies {
     implementation deps('androidx.lifecycle:lifecycle-common-java8')
     implementation deps('androidx.lifecycle:lifecycle-extensions')
 
+    // DebugDrawer
+    debugImplementation deps('com.github.lenguyenthanh.debugdrawer:debugdrawer')
+    releaseImplementation deps('com.github.lenguyenthanh.debugdrawer:debugdrawer-no-op')
+    implementation deps('com.github.lenguyenthanh.debugdrawer:debugdrawer-commons')
+    implementation deps('com.github.lenguyenthanh.debugdrawer:debugdrawer-scalpel')
+    implementation deps('com.github.lenguyenthanh.debugdrawer:debugdrawer-base')
+    implementation deps('com.github.lenguyenthanh.debugdrawer:debugdrawer-timber')
+    implementation deps('com.github.lenguyenthanh.debugdrawer:debugdrawer-network-quality')
+
+    // Utils
+    implementation deps('com.jakewharton.scalpel:scalpel')
+
     // Testing
     testImplementation deps('junit:junit')
     testImplementation deps('org.jetbrains.kotlin:kotlin-test-junit')

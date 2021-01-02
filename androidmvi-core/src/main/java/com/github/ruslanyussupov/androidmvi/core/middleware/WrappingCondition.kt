@@ -18,6 +18,13 @@ interface WrappingCondition {
         }
     }
 
+    class Conditional(private val condition: () -> Boolean) : WrappingCondition {
+
+        override fun shouldWrap(target: Any, name: String?, standalone: Boolean): Boolean {
+            return condition()
+        }
+    }
+
     object IsStandalone: WrappingCondition {
 
         override fun shouldWrap(target: Any, name: String?, standalone: Boolean): Boolean {

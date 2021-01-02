@@ -11,6 +11,7 @@ import com.github.ruslanyussupov.androidmvi.core.elements.TriggerTransformer
 import com.github.ruslanyussupov.androidmvi.core.internal.toProducer
 import com.github.ruslanyussupov.androidmvi.core.internal.tryEmitOrBlock
 import com.github.ruslanyussupov.androidmvi.core.internal.wrapWithMiddlewares
+import com.github.ruslanyussupov.androidmvi.core.middleware.StandaloneMiddleware
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -80,6 +81,14 @@ open class BaseFeature<Trigger : Any, State : Any, Action : Any, Effect : Any, E
     ).wrapWithMiddlewares(standalone = true, wrapperOf = actor)
 
     init {
+        scope.coroutineContext.job.invokeOnCompletion {
+            listOf(postProcessorWrapper, eventPublisherWrapper, reducerWrapper, actorWrapper)
+                .filterIsInstance<StandaloneMiddleware<*>>()
+                .forEach { middleware ->
+                    middleware.complete()
+                }
+        }
+
         if (eventPublisher != null) {
             _events.subscriptionCount.filter { count ->
                 count > 0

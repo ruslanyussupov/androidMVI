@@ -9,6 +9,7 @@ internal class StandaloneMiddleware<In>(
 ) : Middleware<In, In>(wrappedMiddleware) {
 
     private var bound = false
+    private var complete = false
     private val connection = Connection<In, In>(
         from = null,
         to = innerMost,
@@ -33,6 +34,13 @@ internal class StandaloneMiddleware<In>(
 
     override fun onComplete(connection: Connection<In, In>) {
         wrappedMiddleware.onComplete(connection)
+    }
+
+    fun complete() {
+        if (!complete) {
+            onComplete(connection)
+            complete = true
+        }
     }
 
     private fun assertSame(connection: Connection<In, In>) {

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">androidMVI</string>
+
+    <string name="finished_playback">Finished playback</string>
 </resources>

@@ -14,6 +14,8 @@ data class Connection<Out, In>(
         return name ?: ANONYMOUS
     }
 
+    fun isAnonymous(): Boolean = name == null
+
     companion object {
         private const val ANONYMOUS = "ANONYMOUS"
     }
