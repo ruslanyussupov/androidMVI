@@ -1,8 +1,6 @@
 package com.github.ruslanyussupov.androidmvi.core.core
 
-import kotlinx.coroutines.flow.StateFlow
+interface Store<in Trigger : Any, out State : Any> : Consumer<Trigger>, Producer<State> {
 
-interface Store<Trigger : Any, State : Any> : Consumer<Trigger>, Producer<State> {
-
-    val state: StateFlow<State>
+    val state: State
 }

@@ -1,26 +1,26 @@
 package com.github.ruslanyussupov.androidmvi.core.feature
 
-import com.github.ruslanyussupov.androidmvi.core.elements.Actor
 import com.github.ruslanyussupov.androidmvi.core.core.Consumer
 import com.github.ruslanyussupov.androidmvi.core.core.Producer
+import com.github.ruslanyussupov.androidmvi.core.elements.Actor
+import com.github.ruslanyussupov.androidmvi.core.elements.Bootstrapper
 import com.github.ruslanyussupov.androidmvi.core.elements.EventPublisher
 import com.github.ruslanyussupov.androidmvi.core.elements.PostProcessor
 import com.github.ruslanyussupov.androidmvi.core.elements.Reducer
+import com.github.ruslanyussupov.androidmvi.core.elements.TriggerToAction
 import com.github.ruslanyussupov.androidmvi.core.internal.SameThreadVerifier
-import com.github.ruslanyussupov.androidmvi.core.elements.TriggerTransformer
-import com.github.ruslanyussupov.androidmvi.core.internal.toProducer
+import com.github.ruslanyussupov.androidmvi.core.internal.asConsumer
+import com.github.ruslanyussupov.androidmvi.core.internal.asProducer
 import com.github.ruslanyussupov.androidmvi.core.internal.tryEmitOrBlock
 import com.github.ruslanyussupov.androidmvi.core.internal.wrapWithMiddlewares
 import com.github.ruslanyussupov.androidmvi.core.middleware.StandaloneMiddleware
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -29,19 +29,21 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.job
 import kotlin.coroutines.CoroutineContext
 
-open class BaseFeature<Trigger : Any, State : Any, Action : Any, Effect : Any, Event : Any>(
+open class BaseFeature<in Trigger : Any, State : Any, Action : Any, Effect : Any, out Event : Any>(
     initialState: State,
     reducer: Reducer<Effect, State>,
     actor: Actor<Action, State, Effect>,
-    private val triggerTransformer: TriggerTransformer<Trigger, Action>,
+    private val triggerToAction: TriggerToAction<Trigger, Action>,
     coroutineContext: CoroutineContext,
+    dispatcher: CoroutineDispatcher,
+    private val bootstrapper: Bootstrapper<Action>? = null,
     postProcessor: PostProcessor<Action, Effect, State>? = null,
     eventPublisher: EventPublisher<Action, Effect, State, Event>? = null,
-    actionsBufferSize: Int = 100,
-    eventsBufferSize: Int = 100
+    actionsBufferSize: Int = 1024,
+    eventsBufferSize: Int = 1024
 ) : Feature<Trigger, State, Event> {
 
-    private val scope = CoroutineScope(SupervisorJob(coroutineContext.job) + Dispatchers.Main.immediate)
+    private val scope = CoroutineScope(SupervisorJob(coroutineContext.job) + dispatcher)
     private val sameThreadVerifier = SameThreadVerifier()
     private val actions = MutableSharedFlow<Action>(extraBufferCapacity = actionsBufferSize)
     private val _events = MutableSharedFlow<Event>(extraBufferCapacity = eventsBufferSize)
@@ -49,10 +51,10 @@ open class BaseFeature<Trigger : Any, State : Any, Action : Any, Effect : Any, E
     private var isAttached = false
 
     override val events: Producer<Event>
-        get() = _events.asSharedFlow().toProducer()
+        get() = _events.asSharedFlow().asProducer()
 
-    override val state: StateFlow<State>
-        get() = _state.asStateFlow()
+    override val state: State
+        get() = _state.value
 
     override val source: SharedFlow<State>
         get() = _state.asSharedFlow()
@@ -81,13 +83,28 @@ open class BaseFeature<Trigger : Any, State : Any, Action : Any, Effect : Any, E
     ).wrapWithMiddlewares(standalone = true, wrapperOf = actor)
 
     init {
-        scope.coroutineContext.job.invokeOnCompletion {
-            listOf(postProcessorWrapper, eventPublisherWrapper, reducerWrapper, actorWrapper)
-                .filterIsInstance<StandaloneMiddleware<*>>()
-                .forEach { middleware ->
-                    middleware.complete()
-                }
+        val consumers = mutableListOf<Consumer<*>?>(postProcessorWrapper, eventPublisherWrapper, reducerWrapper, actorWrapper)
+        if (bootstrapper != null) {
+            val actionsConsumer = actions.asConsumer().wrapWithMiddlewares(
+                standalone = true,
+                wrapperOf = bootstrapper,
+                postfix = "Output"
+            )
+            consumers += actionsConsumer
+            bootstrapper.source.onEach { action ->
+                actionsConsumer.receive(action)
+            }.launchIn(scope)
         }
+
+        scope.coroutineContext.job.invokeOnCompletion {
+            consumers.filterIsInstance<StandaloneMiddleware<*>>().forEach { middleware ->
+                middleware.complete()
+            }
+        }
+
+        actions.onEach { action ->
+            execute(action, state)
+        }.launchIn(scope)
 
         if (eventPublisher != null) {
             _events.subscriptionCount.filter { count ->
@@ -101,17 +118,15 @@ open class BaseFeature<Trigger : Any, State : Any, Action : Any, Effect : Any, E
     }
 
     private fun onAttached() {
-        actions.onEach { action ->
-            execute(action, state.value)
-        }.launchIn(scope)
         isAttached = true
+        bootstrapper?.initialize()
     }
 
     override fun receive(value: Trigger) {
         if (!isAttached) {
             error("Must be subscribed to the event publisher before receiving triggers.")
         }
-        val action = triggerTransformer.transform(value)
+        val action = triggerToAction.transform(value)
         actions.tryEmitOrBlock(action)
     }
 

@@ -24,6 +24,7 @@ internal fun <In> Consumer<In>.wrapWithMiddlewares(
     }
 
     if (standalone && head is Middleware<*, *>) {
+        @Suppress("UNCHECKED_CAST")
         head = StandaloneMiddleware(
             head as Middleware<In, In>,
             name ?: wrapperOf?.javaClass?.simpleName,

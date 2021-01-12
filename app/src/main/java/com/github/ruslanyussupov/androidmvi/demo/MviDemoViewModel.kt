@@ -9,6 +9,7 @@ import com.github.ruslanyussupov.androidmvi.core.core.Producer
 import com.github.ruslanyussupov.androidmvi.demo.Feature.Event
 import com.github.ruslanyussupov.androidmvi.demo.Feature.State
 import com.github.ruslanyussupov.androidmvi.demo.Feature.Trigger
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 
@@ -23,7 +24,7 @@ class MviDemoViewModel : ViewModel(), Consumer<State>, Producer<Trigger> {
         get() = _events
 
     private val feature = Feature(viewModelScope.coroutineContext)
-    private val eventsListener = MviDemoEventsListener(_events, viewModelScope)
+    private val eventsListener = MviDemoEventsListener(_events)
     private val bindings = MviDemoViewModelBindings(
         viewModelScope.coroutineContext,
         feature,
@@ -36,7 +37,7 @@ class MviDemoViewModel : ViewModel(), Consumer<State>, Producer<Trigger> {
         bindings.setup(this)
     }
 
-    override val source: SharedFlow<Trigger>
+    override val source: Flow<Trigger>
         get() = triggers
 
     override fun receive(value: State) {

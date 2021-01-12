@@ -25,7 +25,7 @@ class MviDemoActivity : DebugActivity() {
         lifecycleScope.launchWhenCreated {
             viewModel.events.collect { event ->
                 when (event) {
-                    is Feature.Event.CounterReached -> {
+                    is Feature.Event.MilestoneReached -> {
                         Toast.makeText(this@MviDemoActivity, "${event.count} reached!", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -33,7 +33,7 @@ class MviDemoActivity : DebugActivity() {
         }
 
         btn_increment.setOnClickListener {
-            viewModel.onViewInteracted(Trigger.IncreaseCounter)
+            viewModel.onViewInteracted(Trigger.IncrementClicked)
         }
     }
 

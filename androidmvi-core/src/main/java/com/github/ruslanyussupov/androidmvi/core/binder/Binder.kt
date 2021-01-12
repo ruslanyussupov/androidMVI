@@ -4,20 +4,23 @@ import com.github.ruslanyussupov.androidmvi.core.core.Consumer
 import com.github.ruslanyussupov.androidmvi.core.core.Producer
 import com.github.ruslanyussupov.androidmvi.core.internal.wrapWithMiddlewares
 import com.github.ruslanyussupov.androidmvi.core.middleware.Middleware
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.onSubscription
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.job
 import kotlin.coroutines.CoroutineContext
 
-class Binder(coroutineContext: CoroutineContext) {
+class Binder(
+    coroutineContext: CoroutineContext,
+    dispatcher: CoroutineDispatcher
+) {
 
-    private val scope = CoroutineScope(SupervisorJob(coroutineContext.job) + Dispatchers.Main.immediate)
+    private val scope = CoroutineScope(SupervisorJob(coroutineContext.job) + dispatcher)
 
     fun <T> bind(connection: Pair<Producer<T>, Consumer<T>>) {
         bind(
@@ -32,9 +35,10 @@ class Binder(coroutineContext: CoroutineContext) {
 
     fun <Out, In> bind(connection: Connection<Out, In>) {
         val consumer = connection.to.wrapWithMiddlewares(standalone = false, name = connection.name)
+        @Suppress("UNCHECKED_CAST")
         val middleware = consumer as? Middleware<Out, In>
         connection.from!!.source
-            .onSubscription {
+            .onStart {
                 middleware?.onBind(connection)
             }
             .onCompletion {
